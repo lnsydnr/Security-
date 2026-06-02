@@ -276,6 +276,35 @@ class MainWindow(QMainWindow):
 
         self.tabs.addTab(w, "Flashcards")
 
+    # Helper to format question with options
+    def format_question_with_options(self, card):
+        """Format a question with its options from metadata."""
+        question_text = card['question']
+        
+        # Parse metadata to get options (handle both dict and sqlite3.Row)
+        try:
+            metadata = card['metadata']
+        except (KeyError, IndexError):
+            metadata = None
+        
+        if metadata:
+            if isinstance(metadata, str):
+                try:
+                    metadata = json.loads(metadata)
+                except (json.JSONDecodeError, TypeError):
+                    metadata = {}
+            
+            options = metadata.get('options', []) if isinstance(metadata, dict) else []
+            
+            if options:
+                # Format with options
+                formatted = f"{question_text}\n\n"
+                for i, option in enumerate(options, 1):
+                    formatted += f"\n({chr(96 + i)}) {option}"
+                return formatted
+        
+        return question_text
+
     # Load and display due flashcards
     def load_due_flashcards(self):
         self.flashcards_data = list(due_flashcards())
@@ -316,7 +345,7 @@ class MainWindow(QMainWindow):
         self.current_card_index = idx
         self.current_card_id = card['id']
         self.card_status_label.setText(f"Card {idx + 1} of {len(self.flashcards_data)}")
-        self.card_q.setPlainText(card['question'])
+        self.card_q.setPlainText(self.format_question_with_options(card))
         self.card_a.setPlainText(card['answer'] or "<no answer provided>")
         self.card_a.hide()
         self.show_ans_btn.setEnabled(True)
@@ -326,7 +355,7 @@ class MainWindow(QMainWindow):
             return
         card = self.easy_cards[idx]
         self.card_status_label.setText(f"Easy Card - [{card['domain']}]")
-        self.card_q.setPlainText(card['question'])
+        self.card_q.setPlainText(self.format_question_with_options(card))
         self.card_a.setPlainText(card['answer'] or "<no answer provided>")
         self.card_a.hide()
         self.show_ans_btn.setEnabled(True)
@@ -336,7 +365,7 @@ class MainWindow(QMainWindow):
             return
         card = self.hard_cards[idx]
         self.card_status_label.setText(f"Hard Card - [{card['domain']}]")
-        self.card_q.setPlainText(card['question'])
+        self.card_q.setPlainText(self.format_question_with_options(card))
         self.card_a.setPlainText(card['answer'] or "<no answer provided>")
         self.card_a.hide()
         self.show_ans_btn.setEnabled(True)
@@ -661,8 +690,8 @@ class MainWindow(QMainWindow):
                 for opt in options:
                     btn = QPushButton(opt)
                     btn.setCheckable(True)
-                    btn.setMinimumHeight(50)
-                    btn.setMaximumWidth(600)
+                    btn.setMinimumHeight(60)
+                    btn.setMaximumWidth(10000)
                     btn.setStyleSheet("""
                         QPushButton {
                             text-align: left;
@@ -1049,8 +1078,11 @@ class MainWindow(QMainWindow):
         path, _ = QFileDialog.getOpenFileName(self, "Open CSV", str(Path.home()), "CSV files (*.csv)")
         if not path:
             return
-        added = import_csv(path)
-        QMessageBox.information(self, "Imported", f"Imported {added} questions")
+        added, duplicates = import_csv(path)
+        message = f"Imported {added} question{'s' if added != 1 else ''}"
+        if duplicates > 0:
+            message += f"\nSkipped {duplicates} duplicate{'s' if duplicates != 1 else ''}"
+        QMessageBox.information(self, "Imported", message)
         self.reload_domains()
         self.load_stats()
         # Refresh flashcards list in case imports created new flashcards
@@ -1063,8 +1095,11 @@ class MainWindow(QMainWindow):
         path, _ = QFileDialog.getOpenFileName(self, "Open JSON", str(Path.home()), "JSON files (*.json)")
         if not path:
             return
-        added = import_json(path)
-        QMessageBox.information(self, "Imported", f"Imported {added} questions")
+        added, duplicates = import_json(path)
+        message = f"Imported {added} question{'s' if added != 1 else ''}"
+        if duplicates > 0:
+            message += f"\nSkipped {duplicates} duplicate{'s' if duplicates != 1 else ''}"
+        QMessageBox.information(self, "Imported", message)
         self.reload_domains()
         self.load_stats()
         # Refresh flashcards list in case imports created new flashcards

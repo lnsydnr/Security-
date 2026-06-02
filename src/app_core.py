@@ -137,42 +137,195 @@ def add_question(domain, question, answer, qtype='free', metadata=None):
     conn.close()
     return qid
 
+def question_exists(question_text):
+    """Check if a question already exists in the database."""
+    conn = get_conn()
+    c = conn.cursor()
+    # Use exact match for question text
+    c.execute("SELECT id FROM questions WHERE LOWER(TRIM(question)) = LOWER(TRIM(?))", (question_text,))
+    result = c.fetchone()
+    conn.close()
+    return result is not None
+
 
 DOMAIN_KEYWORDS = {
     "Threats, Attacks, and Vulnerabilities": [
-        "malware", "trojan", "virus", "worm", "rootkit", "spyware", "ransomware",
-        "phishing", "spearphishing", "smishing", "vishing", "social engineering",
-        "denial of service", "dos", "ddos", "brute force", "credential stuffing",
-        "replay attack", "spoofing", "on-path", "man-in-the-middle", "arp", "cache poisoning",
-        "dns poisoning", "sql injection", "zero-day", "exploit", "vulnerability", "attack",
-        "attacker", "unauthorized access"
+        # Malware types
+        "malware", "trojan", "virus", "worm", "rootkit", "spyware", "ransomware", "adware",
+        "botnet", "cryptolocker", "keylogger", "backdoor", "logic bomb", "wiperware",
+        # Social engineering and phishing
+        "phishing", "spearphishing", "smishing", "vishing", "social engineering", "pretexting",
+        "baiting", "tailgating", "shoulder surfing",
+        # Network attacks
+        "denial of service", "dos", "ddos", "distributed denial", "syn flood", "ping flood",
+        "ping of death", "smurf attack", "land attack",
+        # Brute force and credential attacks
+        "brute force", "credential stuffing", "password spray", "dictionary attack",
+        "rainbow table", "pass the hash",
+        # On-path and man-in-the-middle
+        "replay attack", "spoofing", "on-path", "man-in-the-middle", "mitm", "arp spoofing",
+        "dns spoofing", "arp poisoning", "cache poisoning", "dns poisoning",
+        # Injection attacks
+        "sql injection", "injection attack", "ldap injection", "command injection",
+        "cross-site scripting", "xss", "cross-site request forgery", "csrf", "xxe",
+        # Vulnerabilities and exploits
+        "zero-day", "exploit", "vulnerability", "cve", "vulnerability disclosure",
+        "vulnerability assessment", "penetration", "attacker", "unauthorized access",
+        "privilege escalation", "lateral movement", "privilege abuse",
+        # Other attack types
+        "session hijacking", "session fixation", "certificate attack", "downgrade attack"
     ],
     "Architecture and Design": [
-        "trusted boot", "tpm", "hsm", "wireless", "wpa3", "vpn", "load balancer",
-        "virtual ip", "ids", "ips", "ngfw", "waf", "dlp", "fde", "bollard",
-        "biometric scanner", "physical security", "encryption key", "ephemeral keys",
-        "tls", "ssl", "dnssec", "certificate", "firewall", "sftp", "email security",
-        "dkim", "spf", "dmarc", "secure baseline", "load-balancing"
+        # Authentication and access control
+        "authentication", "authorization", "multi-factor", "mfa", "2fa", "totp", "hotp",
+        "single sign-on", "sso", "saml", "oauth", "openid", "ldap", "kerberos",
+        "access control list", "acl", "rbac", "role-based", "attribute-based", "abac",
+        "principle of least privilege",
+        # Encryption and cryptography
+        "encryption", "cryptography", "symmetric", "asymmetric", "public key", "private key",
+        "certificate", "pki", "public key infrastructure", "digital signature", "hash",
+        "md5", "sha", "sha-256", "rsa", "aes", "des", "3des", "rc4", "tls", "ssl",
+        "tls 1.2", "tls 1.3", "https", "pgp", "gnupg", "cipher", "cipher suite",
+        "elliptic curve", "diffie-hellman", "key exchange", "perfect forward secrecy",
+        # Network architecture and design
+        "firewall", "next-generation firewall", "ngfw", "stateful firewall", "stateless",
+        "ids", "ips", "intrusion detection", "intrusion prevention", "nids", "hids",
+        "ids/ips", "waf", "web application firewall", "dlp", "data loss prevention",
+        "vpn", "virtual private network", "site-to-site", "remote access", "split tunnel",
+        "load balancer", "load balancing", "failover", "redundancy", "high availability",
+        "virtual ip", "vip", "nat", "network address translation", "proxy", "reverse proxy",
+        # Wireless security
+        "wireless", "wpa", "wpa2", "wpa3", "wep", "wpa-enterprise", "wpa-personal",
+        "ieee 802.1x", "802.1x", "eap", "extended authentication protocol",
+        # Physical security
+        "physical security", "biometric", "biometric scanner", "fingerprint scan",
+        "iris scan", "facial recognition", "bollard", "mantrap", "badge reader",
+        "keypad", "card reader", "access control", "cidr", "cctv", "security guard",
+        # Secure protocols and standards
+        "dnssec", "dns security extensions", "sftp", "ssh", "secure shell",
+        "email security", "s/mime", "pgp", "dkim", "spf", "dmarc",
+        "smtps", "imaps", "pop3s", "pops",
+        # Other architecture concepts
+        "dmz", "demilitarized zone", "air gap", "air gapped", "secure baseline",
+        "configuration management", "provisioning", "deprovisioning", "tpm", "trusted platform",
+        "hsm", "hardware security module", "secure enclave", "trusted execution environment",
+        "fde", "full disk encryption", "ephemeral", "ephemeral keys", "key rotation"
     ],
     "Implementation": [
-        "application deny list", "allow list", "group policy", "password length",
-        "reversible encryption", "antivirus", "secure erase", "sanitize", "deploy",
-        "configure", "install", "least privilege", "access control", "multi-factor",
-        "fingerprint scan", "password", "digital signature", "verify", "full-disk encryption"
+        # Access management and identity
+        "access management", "identity management", "account management", "password policy",
+        "password complexity", "password length", "password expiration", "account lockout",
+        "failed login attempts", "password history", "group policy", "gpo",
+        "centralized management", "decentralized management", "provisioning",
+        # Access controls
+        "least privilege", "privilege escalation", "principle of least privilege",
+        "permission", "rights", "access control", "allow list", "whitelist",
+        "deny list", "blocklist", "deny all default",
+        # Cryptographic implementation
+        "encryption", "cipher", "key management", "key rotation", "key escrow",
+        "key stretching", "pbkdf2", "bcrypt", "scrypt", "argon2",
+        "reversible encryption", "non-reversible", "hashing", "salt", "pepper",
+        "digital signature", "signature verification",
+        # Security software and tools
+        "antivirus", "anti-malware", "endpoint protection", "edr", "endpoint detection",
+        "host-based firewall", "hips", "host intrusion prevention",
+        "dlp", "data loss prevention", "removable media", "usb restrictions",
+        # Secure erase and data destruction
+        "secure erase", "secure delete", "data sanitization", "sanitize", "wiping",
+        "cryptographic erase", "formatting", "degaussing", "physical destruction",
+        "data retention", "shredding",
+        # Deployment and configuration
+        "deploy", "deployment", "configure", "configuration", "install", "installation",
+        "baseline", "hardening", "os hardening", "application hardening",
+        "disable unnecessary services", "service hardening",
+        # Patch management
+        "patch", "patch management", "update", "hotfix", "service pack", "security patch",
+        "patch tuesday", "emergency patch", "emergency update",
+        # Code security
+        "code review", "secure coding", "input validation", "input sanitization",
+        "output encoding", "parameterized query", "prepared statement",
+        "least privilege", "fail securely", "deny by default"
     ],
     "Operations and Incident Response": [
-        "incident", "forensic", "packet capture", "netflow", "vulnerability scans",
-        "security testing", "assessments", "audits", "logs", "monitor", "response",
-        "investigating", "review raw network traffic", "dashboard reporting",
-        "risk indicators", "risk trend analysis", "reports"
+        # Monitoring and logging
+        "logging", "log", "audit log", "audit trail", "system log", "security log",
+        "event log", "syslog", "centralized logging", "log aggregation", "siem",
+        "security information event management", "soar", "security orchestration",
+        "monitoring", "real-time monitoring", "continuous monitoring", "security monitoring",
+        # Alerting and detection
+        "alert", "alerting", "threshold", "anomaly detection", "baseline",
+        "behavioral analytics", "ueba", "user behavior analytics",
+        # Incident response
+        "incident", "incident response", "incident management", "incident handler",
+        "incident commander", "incident response plan", "incident response team",
+        "incident response procedure", "incident response process",
+        # Forensics and investigation
+        "forensic", "forensics", "forensic investigation", "digital forensics",
+        "evidence", "evidence preservation", "chain of custody", "eol", "end of life",
+        "data retention", "legal hold",
+        # Traffic analysis and network security
+        "packet capture", "pcap", "wireshark", "tcpdump", "netflow", "network flow",
+        "traffic analysis", "network analysis", "flow data",
+        # Testing and assessment
+        "security testing", "security assessment", "vulnerability scan", "vulnerability scanning",
+        "vulnerability assessment", "penetration test", "penetration testing", "pentest",
+        "red team", "blue team", "adversary simulation",
+        # Auditing and compliance monitoring
+        "audit", "auditing", "internal audit", "external audit", "compliance audit",
+        "assessment", "evaluation", "review",
+        # Reporting
+        "report", "reporting", "dashboard", "dashboard reporting", "metrics", "kpi",
+        "risk indicators", "risk trend", "risk trend analysis", "security metric",
+        # Vulnerability management
+        "vulnerability", "vulnerability management", "vulnerability disclosure",
+        "responsible disclosure", "zero-day", "patch management"
     ],
     "Governance, Risk, and Compliance": [
-        "legal hold", "vendor", "financial stability", "reputation", "regulatory compliance",
-        "compliance", "privacy", "personal information", "online banking",
-        "information security program", "risk event", "risk management", "policy",
-        "management", "business-critical", "sensitive data"
+        # Regulations and compliance frameworks
+        "compliance", "regulatory compliance", "regulation", "regulatory", "regulatory requirement",
+        "hipaa", "hitech", "gdpr", "ccpa", "pci-dss", "pci dss", "sox", "sarbanes-oxley",
+        "nist", "cis", "iso", "iso 27001", "iso 27002", "iso 27035", "cobit",
+        "hipaa compliance", "gdpr compliance", "ccpa compliance",
+        # Standards and frameworks
+        "framework", "security framework", "standard", "security standard",
+        "best practice", "baseline", "security baseline", "critical security control",
+        "control", "security control", "preventive control", "detective control",
+        "corrective control", "compensating control",
+        # Risk management
+        "risk", "risk management", "risk assessment", "risk analysis", "risk evaluation",
+        "risk mitigation", "risk acceptance", "risk avoidance", "risk transfer",
+        "likelihood", "impact", "probability", "risk score", "risk rating",
+        "quantitative risk", "qualitative risk",
+        # Security governance
+        "governance", "information security governance", "security governance",
+        "policy", "security policy", "information security policy", "procedure",
+        "standard", "guideline", "policy development",
+        # Organizational practices
+        "security awareness", "security training", "user training", "security culture",
+        "separation of duties", "segregation of duties", "conflict of interest",
+        "management review", "executive management",
+        # Data protection and privacy
+        "privacy", "data privacy", "personal information", "personal data", "pii",
+        "sensitive data", "data classification", "data handling", "data protection",
+        "data minimization", "purpose limitation", "data retention",
+        # Third-party and vendor management
+        "vendor", "vendor management", "third-party", "third party management",
+        "service provider", "business associate", "vendor security", "vendor assessment",
+        "sla", "service level agreement", "contract", "licensing", "license agreement",
+        # Financial and business considerations
+        "financial stability", "reputation", "business impact", "business continuity",
+        "disaster recovery", "recovery time objective", "rto", "recovery point objective",
+        "rpo", "continuity of operations", "coop", "business-critical", "critical system",
+        # Legal and compliance monitoring
+        "legal hold", "litigation hold", "compliance monitoring", "regulatory audit",
+        "compliance violation", "compliance incident", "compliance requirement",
+        # Risk and security program
+        "information security program", "risk event", "risk register", "risk appetite",
+        "risk tolerance", "risk indicator", "security metric", "kpi", "key performance indicator",
+        "management", "executive management", "board", "governance committee"
     ]
 }
+
 
 
 def infer_question_domain(question, explanation=None, metadata=None):
@@ -337,6 +490,7 @@ def convert_questions_to_import(path, output_path=None):
 # Import questions from CSV or JSON file
 def import_csv(path):
     added = 0
+    duplicates = 0
     with open(path, newline='', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
@@ -364,17 +518,22 @@ def import_csv(path):
                 domain = infer_question_domain(q, explanation, metadata)
             
             if q:
-                qid = add_question(domain, q, a, t, metadata or None)
-                try:
-                    _ensure_flashcard_for(qid)
-                except Exception:
-                    # non-fatal: flashcard creation failure shouldn't stop import
-                    pass
-                added += 1
-    return added
+                # Check for duplicates
+                if question_exists(q):
+                    duplicates += 1
+                else:
+                    qid = add_question(domain, q, a, t, metadata or None)
+                    try:
+                        _ensure_flashcard_for(qid)
+                    except Exception:
+                        # non-fatal: flashcard creation failure shouldn't stop import
+                        pass
+                    added += 1
+    return added, duplicates
 
 def import_json(path):
     added = 0
+    duplicates = 0
     with open(path, 'r', encoding='utf-8') as f:
         data = json.load(f)
         for item in data:
@@ -398,13 +557,17 @@ def import_json(path):
                 domain = infer_question_domain(q, explanation, metadata)
 
             if q:
-                qid = add_question(domain, q, a, t, metadata)
-                try:
-                    _ensure_flashcard_for(qid)
-                except Exception:
-                    pass
-                added += 1
-    return added
+                # Check for duplicates
+                if question_exists(q):
+                    duplicates += 1
+                else:
+                    qid = add_question(domain, q, a, t, metadata)
+                    try:
+                        _ensure_flashcard_for(qid)
+                    except Exception:
+                        pass
+                    added += 1
+    return added, duplicates
 
 # Retrieve distinct domains
 def list_domains():
