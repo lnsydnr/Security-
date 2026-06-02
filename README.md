@@ -49,13 +49,23 @@ python security_app.py
 
 ## App Tabs
 
-- **Dashboard**: overview of quiz accuracy by domain and refreshable stats
-- **Flashcards**: review due flashcards and grade them to update scheduling
+- **Dashboard**: overview of quiz accuracy by domain with interactive bar chart showing value labels and refreshable stats
+- **Flashcards**: review due flashcards and grade them to update scheduling; track easy and hard cards across sessions for focused studying
 - **Question Bank**: browse and delete stored questions
 - **Quiz**: select domain and question count, answer inline, and see results
 - **History**: review past quiz attempts and detailed answer breakdowns
 - **Import**: load questions from CSV or JSON files
 - **Settings**: export question bank, auto-assign missing domains, and reset the local database
+
+## Flashcard Categories
+
+The flashcards system automatically categorizes your cards based on performance:
+
+- **Due Flashcards**: Cards scheduled for review based on the spaced repetition algorithm
+- **Easy Cards**: Cards you've graded as "Easy" (quality 5) - cards you've mastered
+- **Hard Cards**: Cards you've graded as "Hard" (quality 4) - cards that need more practice
+
+Your card categories are saved automatically and persist across sessions, allowing you to focus on weak areas or revisit mastered content as needed.
 
 ## Automatic Domain Assignment
 
@@ -121,8 +131,10 @@ Use the **Settings** tab and click **Reset Database (delete all)** to remove all
 ## Notes
 
 - Quiz answers are stored in the local SQLite database for history and statistics.
-- Flashcard scheduling uses a simplified SM-2-like algorithm.
+- Flashcard scheduling uses a simplified SM-2-like algorithm with three grading levels: Hard (4), Easy (5), and Mastered (6).
+- The dashboard displays an interactive bar chart showing accuracy by domain, with value labels for quick reference.
 - The app supports both multiple-choice and free-form questions.
+- Easy and hard flashcard categorizations are persisted in `~/.security_plus_study_app/flashcards/.known_cards.json`.
 
 ## Uninstall
 To uninstall, simply delete the executable or the repository (if cloned locally) and remove the local data directory at `~/.security_plus_study_app/`.
