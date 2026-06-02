@@ -62,10 +62,6 @@ class MainWindow(QMainWindow):
         # Set the content widget onto the scroll area
         self.scroll_area.setWidget(self.scroll_content)
 
-        # Add the scroll area to your main layout instead of the raw canvas
-        self.main_layout = QVBoxLayout(self)
-        self.main_layout.addWidget(self.scroll_area)
-
         icon_path = resolve_asset_path("app_icon.png")
         if not icon_path:
             icon_path = resolve_asset_path("app_icon.ico")
@@ -74,6 +70,16 @@ class MainWindow(QMainWindow):
 
         self.tabs = QTabWidget()
         self.setCentralWidget(self.tabs)
+
+        # Initialize known cards tracking (will be loaded from file)
+        self.easy_cards = []
+        self.hard_cards = []
+        self.easy_card_ids = set()
+        self.hard_card_ids = set()
+        self.flashcards_dir = Path(__file__).parent.parent / "flashcards"
+        self.flashcards_dir.mkdir(exist_ok=True)
+        self.known_cards_file = self.flashcards_dir / ".known_cards.json"
+        self.load_known_cards()
 
         self.dashboard_tab()
         self.flashcards_tab()
@@ -204,13 +210,21 @@ class MainWindow(QMainWindow):
         self.due_list.currentRowChanged.connect(self.show_flashcard)
         left.addWidget(self.due_list)
 
-        left.addWidget(QLabel("<h3>Known this session</h3>"))
-        self.known_count_label = QLabel("Known cards: 0")
-        left.addWidget(self.known_count_label)
-        self.known_list = QListWidget()
-        self.known_list.setSelectionMode(QListWidget.NoSelection)
-        self.known_list.setMaximumHeight(160)
-        left.addWidget(self.known_list)
+        left.addWidget(QLabel("<h3>Easy Flashcards</h3>"))
+        self.easy_count_label = QLabel("Easy cards: 0")
+        left.addWidget(self.easy_count_label)
+        self.easy_list = QListWidget()
+        self.easy_list.currentRowChanged.connect(self.show_easy_card)
+        self.easy_list.setMaximumHeight(80)
+        left.addWidget(self.easy_list)
+
+        left.addWidget(QLabel("<h3>Hard Flashcards</h3>"))
+        self.hard_count_label = QLabel("Hard cards: 0")
+        left.addWidget(self.hard_count_label)
+        self.hard_list = QListWidget()
+        self.hard_list.currentRowChanged.connect(self.show_hard_card)
+        self.hard_list.setMaximumHeight(80)
+        left.addWidget(self.hard_list)
 
         right.addWidget(QLabel("<h3>Card</h3>"))
         self.card_status_label = QLabel("Select a due card or refresh due cards.")
@@ -237,7 +251,7 @@ class MainWindow(QMainWindow):
 
         import functools
         grades_layout = QHBoxLayout()
-        for label, score in [("Again", 0), ("Hard", 3), ("Good", 4), ("Easy", 5)]:
+        for label, score in [("Hard", 4), ("Easy", 5), ("Mastered", 6)]:
             btn = QPushButton(label)
             btn.clicked.connect(functools.partial(self.grade_card, score))
             grades_layout.addWidget(btn)
@@ -257,12 +271,39 @@ class MainWindow(QMainWindow):
         right.addWidget(refresh)
 
         self.flashcards_data = []
-        self.known_cards = []
-        self.known_card_ids = set()
         self.current_card_index = -1
         self.load_due_flashcards()
 
         self.tabs.addTab(w, "Flashcards")
+
+    # Helper to format question with options
+    def format_question_with_options(self, card):
+        """Format a question with its options from metadata."""
+        question_text = card['question']
+        
+        # Parse metadata to get options (handle both dict and sqlite3.Row)
+        try:
+            metadata = card['metadata']
+        except (KeyError, IndexError):
+            metadata = None
+        
+        if metadata:
+            if isinstance(metadata, str):
+                try:
+                    metadata = json.loads(metadata)
+                except (json.JSONDecodeError, TypeError):
+                    metadata = {}
+            
+            options = metadata.get('options', []) if isinstance(metadata, dict) else []
+            
+            if options:
+                # Format with options
+                formatted = f"{question_text}\n\n"
+                for i, option in enumerate(options, 1):
+                    formatted += f"\n({chr(96 + i)}) {option}"
+                return formatted
+        
+        return question_text
 
     # Load and display due flashcards
     def load_due_flashcards(self):
@@ -272,6 +313,18 @@ class MainWindow(QMainWindow):
             display = f"[{r['domain']}] {r['question'][:120]}"
             self.due_list.addItem(f"{r['id']}: {display}")
         self.due_count_label.setText(f"Due cards: {len(self.flashcards_data)}")
+        
+        # Rebuild easy_cards and hard_cards lists from IDs by querying database
+        self.easy_cards = []
+        self.hard_cards = []
+        if self.easy_card_ids or self.hard_card_ids:
+            all_questions = list(get_questions())
+            for q in all_questions:
+                if q['id'] in self.easy_card_ids:
+                    self.easy_cards.append(q)
+                elif q['id'] in self.hard_card_ids:
+                    self.hard_cards.append(q)
+        
         self.update_known_list()
         if self.flashcards_data:
             self.show_flashcard(0)
@@ -292,7 +345,27 @@ class MainWindow(QMainWindow):
         self.current_card_index = idx
         self.current_card_id = card['id']
         self.card_status_label.setText(f"Card {idx + 1} of {len(self.flashcards_data)}")
-        self.card_q.setPlainText(card['question'])
+        self.card_q.setPlainText(self.format_question_with_options(card))
+        self.card_a.setPlainText(card['answer'] or "<no answer provided>")
+        self.card_a.hide()
+        self.show_ans_btn.setEnabled(True)
+
+    def show_easy_card(self, idx):
+        if idx < 0 or idx >= len(self.easy_cards):
+            return
+        card = self.easy_cards[idx]
+        self.card_status_label.setText(f"Easy Card - [{card['domain']}]")
+        self.card_q.setPlainText(self.format_question_with_options(card))
+        self.card_a.setPlainText(card['answer'] or "<no answer provided>")
+        self.card_a.hide()
+        self.show_ans_btn.setEnabled(True)
+
+    def show_hard_card(self, idx):
+        if idx < 0 or idx >= len(self.hard_cards):
+            return
+        card = self.hard_cards[idx]
+        self.card_status_label.setText(f"Hard Card - [{card['domain']}]")
+        self.card_q.setPlainText(self.format_question_with_options(card))
         self.card_a.setPlainText(card['answer'] or "<no answer provided>")
         self.card_a.hide()
         self.show_ans_btn.setEnabled(True)
@@ -306,11 +379,17 @@ class MainWindow(QMainWindow):
             self.show_flashcard(self.current_card_index + 1)
 
     def update_known_list(self):
-        self.known_list.clear()
-        for r in self.known_cards:
+        self.easy_list.clear()
+        for r in self.easy_cards:
             display = f"[{r['domain']}] {r['question'][:80]}"
-            self.known_list.addItem(display)
-        self.known_count_label.setText(f"Known cards: {len(self.known_cards)}")
+            self.easy_list.addItem(display)
+        self.easy_count_label.setText(f"Easy cards: {len(self.easy_cards)}")
+        
+        self.hard_list.clear()
+        for r in self.hard_cards:
+            display = f"[{r['domain']}] {r['question'][:80]}"
+            self.hard_list.addItem(display)
+        self.hard_count_label.setText(f"Hard cards: {len(self.hard_cards)}")
 
     # Grade the card and update SRS
     def grade_card(self, quality):
@@ -318,14 +397,68 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "No card", "Select a card first")
             return
         qid = self.current_card_id
+        card = self.flashcards_data[self.current_card_index]
         schedule_update(qid, quality)
         record_attempt(qid, quality >= 4)
-        if quality >= 4 and qid not in self.known_card_ids:
-            self.known_card_ids.add(qid)
-            self.known_cards.append(self.flashcards_data[self.current_card_index])
+        
+        # Add to easy or hard based on quality
+        if quality == 5 and qid not in self.easy_card_ids:  # Easy
+            self.easy_card_ids.add(qid)
+            self.easy_cards.append(card)
+        elif quality == 4 and qid not in self.hard_card_ids:  # Good (Hard)
+            self.hard_card_ids.add(qid)
+            self.hard_cards.append(card)
+        
         self.update_known_list()
         QMessageBox.information(self, "Saved", "Your answer and scheduling updated.")
-        self.load_due_flashcards()
+        
+        # Remove the graded card from the current list and update UI
+        if 0 <= self.current_card_index < len(self.flashcards_data):
+            self.flashcards_data.pop(self.current_card_index)
+            self.due_list.takeItem(self.current_card_index)
+            self.due_count_label.setText(f"Due cards: {len(self.flashcards_data)}")
+            
+            # Show next card or previous if at end
+            if self.current_card_index < len(self.flashcards_data):
+                self.show_flashcard(self.current_card_index)
+            elif self.current_card_index > 0:
+                self.show_flashcard(self.current_card_index - 1)
+            else:
+                self.current_card_index = -1
+                self.card_status_label.setText("No more due flashcards. Nice work!")
+                self.card_q.clear()
+                self.card_a.clear()
+                self.show_ans_btn.setEnabled(False)
+        
+        # Save known cards to persist across sessions
+        self.save_known_cards()
+
+    def load_known_cards(self):
+        """Load known cards from file."""
+        if self.known_cards_file.exists():
+            try:
+                with open(self.known_cards_file, 'r') as f:
+                    data = json.load(f)
+                    self.easy_card_ids = set(data.get('easy_card_ids', []))
+                    self.hard_card_ids = set(data.get('hard_card_ids', []))
+            except Exception:
+                pass
+
+    def save_known_cards(self):
+        """Save known cards to file for persistence."""
+        try:
+            with open(self.known_cards_file, 'w') as f:
+                json.dump({
+                    'easy_card_ids': list(self.easy_card_ids),
+                    'hard_card_ids': list(self.hard_card_ids)
+                }, f)
+        except Exception:
+            pass
+
+    def closeEvent(self, event):
+        """Save known cards when closing the app."""
+        self.save_known_cards()
+        super().closeEvent(event)
 
     # Question bank tab
     def bank_tab(self):
@@ -557,8 +690,8 @@ class MainWindow(QMainWindow):
                 for opt in options:
                     btn = QPushButton(opt)
                     btn.setCheckable(True)
-                    btn.setMinimumHeight(50)
-                    btn.setMaximumWidth(600)
+                    btn.setMinimumHeight(60)
+                    btn.setMaximumWidth(10000)
                     btn.setStyleSheet("""
                         QPushButton {
                             text-align: left;
@@ -945,8 +1078,11 @@ class MainWindow(QMainWindow):
         path, _ = QFileDialog.getOpenFileName(self, "Open CSV", str(Path.home()), "CSV files (*.csv)")
         if not path:
             return
-        added = import_csv(path)
-        QMessageBox.information(self, "Imported", f"Imported {added} questions")
+        added, duplicates = import_csv(path)
+        message = f"Imported {added} question{'s' if added != 1 else ''}"
+        if duplicates > 0:
+            message += f"\nSkipped {duplicates} duplicate{'s' if duplicates != 1 else ''}"
+        QMessageBox.information(self, "Imported", message)
         self.reload_domains()
         self.load_stats()
         # Refresh flashcards list in case imports created new flashcards
@@ -959,8 +1095,11 @@ class MainWindow(QMainWindow):
         path, _ = QFileDialog.getOpenFileName(self, "Open JSON", str(Path.home()), "JSON files (*.json)")
         if not path:
             return
-        added = import_json(path)
-        QMessageBox.information(self, "Imported", f"Imported {added} questions")
+        added, duplicates = import_json(path)
+        message = f"Imported {added} question{'s' if added != 1 else ''}"
+        if duplicates > 0:
+            message += f"\nSkipped {duplicates} duplicate{'s' if duplicates != 1 else ''}"
+        QMessageBox.information(self, "Imported", message)
         self.reload_domains()
         self.load_stats()
         # Refresh flashcards list in case imports created new flashcards

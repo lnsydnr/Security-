@@ -1,0 +1,7 @@
+pyi-makespec.exe --onefile --windowed --name="security-plus-app" --add-data "assets/app_icon.png;assets" src/security_app.py
+- makes a .spec file in the root directory
+- creates a build and dist directory
+
+pyinstaller security-plus-app.spec
+- bundles the app based on the .spec file
+- places the .exe in the dist directory
