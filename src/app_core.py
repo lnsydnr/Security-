@@ -235,6 +235,7 @@ DOMAIN_KEYWORDS = {
     # Ports and protocols
     "ports", "port", "protocols", "tcp", "udp", "icmp", "http", "https", "ftp", "sftp",
     "ssh", "telnet", "smtp", "smtps", "pop3", "pop3s", "imap", "imaps", "dns", "dhcp", "ldap", "kerberos", "rdp", "vnc"
+    "service", "well-known port", "registered port", "dynamic port"
     ],
     "Security Operations": [
         # Monitoring and logging
@@ -315,7 +316,6 @@ DOMAIN_KEYWORDS = {
         "management", "executive management", "board", "governance committee"
     ]
 }
-
 
 
 def infer_question_domain(question, explanation=None, metadata=None):
