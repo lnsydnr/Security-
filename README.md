@@ -20,6 +20,13 @@ The app stores data locally in your home directory at `~/.security_plus_study_ap
 - `assets/` — app icons and static assets
 - `data/example_questions/` — sample question files
 
+## Database Schema
+- `questions` table: stores all questions with fields for domain, question text, answer, options, and explanation
+- `flashcards` table: tracks flashcard scheduling with fields for question ID, next review date, and performance history
+- `quizzes` table: records quiz attempts with fields for timestamp, domain, question count, and score
+- `quiz_answers` table: stores individual quiz question answers with fields for quiz ID, question ID, user answer, correctness, and explanation
+- `attempts` table: tracks quiz attempts with fields for timestamp, domain, question count, and score
+
 ## Requirements
 
 - Python 3.8+
@@ -28,15 +35,15 @@ The app stores data locally in your home directory at `~/.security_plus_study_ap
 
 ## Installation
 
-1. Clone the repository:
-   ```sh
-   git clone https://github.com/lnsydnr/Security-Plus-App.git
-   cd Security-Plus-App
-   ```
-2. Install dependencies:
-   ```sh
-   python -m pip install -r requirements.txt
-   ```
+- Clone the repository:
+  ```sh
+  git clone https://github.com/lnsydnr/Security-Plus-App.git
+  cd Security-Plus-App
+  ```
+- Install dependencies:
+  ```sh
+  python -m pip install -r requirements.txt
+  ```
 
 ## Running the App
 
