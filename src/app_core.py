@@ -149,7 +149,7 @@ def question_exists(question_text):
 
 
 DOMAIN_KEYWORDS = {
-    "Threats, Attacks, and Vulnerabilities": [
+    "Threats, Attacks, and Mitigations": [
         # Malware types
         "malware", "trojan", "virus", "worm", "rootkit", "spyware", "ransomware", "adware",
         "botnet", "cryptolocker", "keylogger", "backdoor", "logic bomb", "wiperware",
@@ -175,78 +175,68 @@ DOMAIN_KEYWORDS = {
         # Other attack types
         "session hijacking", "session fixation", "certificate attack", "downgrade attack"
     ],
-    "Architecture and Design": [
-        # Authentication and access control
-        "authentication", "authorization", "multi-factor", "mfa", "2fa", "totp", "hotp",
-        "single sign-on", "sso", "saml", "oauth", "openid", "ldap", "kerberos",
-        "access control list", "acl", "rbac", "role-based", "attribute-based", "abac",
-        "principle of least privilege",
-        # Encryption and cryptography
+    "General Security Concepts": [
+        # Core CIA triad concepts
+        "confidentiality", "integrity", "availability", "non-repudiation", "cia triad",
+        "authentication", "authorization", "accounting", "aaa",
+        # Encryption and cryptography fundamentals
         "encryption", "cryptography", "symmetric", "asymmetric", "public key", "private key",
         "certificate", "pki", "public key infrastructure", "digital signature", "hash",
-        "md5", "sha", "sha-256", "rsa", "aes", "des", "3des", "rc4", "tls", "ssl",
-        "tls 1.2", "tls 1.3", "https", "pgp", "gnupg", "cipher", "cipher suite",
-        "elliptic curve", "diffie-hellman", "key exchange", "perfect forward secrecy",
-        # Network architecture and design
-        "firewall", "next-generation firewall", "ngfw", "stateful firewall", "stateless",
-        "ids", "ips", "intrusion detection", "intrusion prevention", "nids", "hids",
-        "ids/ips", "waf", "web application firewall", "dlp", "data loss prevention",
-        "vpn", "virtual private network", "site-to-site", "remote access", "split tunnel",
-        "load balancer", "load balancing", "failover", "redundancy", "high availability",
-        "virtual ip", "vip", "nat", "network address translation", "proxy", "reverse proxy",
-        # Wireless security
-        "wireless", "wpa", "wpa2", "wpa3", "wep", "wpa-enterprise", "wpa-personal",
-        "ieee 802.1x", "802.1x", "eap", "extended authentication protocol",
-        # Physical security
-        "physical security", "biometric", "biometric scanner", "fingerprint scan",
-        "iris scan", "facial recognition", "bollard", "mantrap", "badge reader",
-        "keypad", "card reader", "access control", "cidr", "cctv", "security guard",
-        # Secure protocols and standards
-        "dnssec", "dns security extensions", "sftp", "ssh", "secure shell",
-        "email security", "s/mime", "pgp", "dkim", "spf", "dmarc",
-        "smtps", "imaps", "pop3s", "pops",
-        # Other architecture concepts
-        "dmz", "demilitarized zone", "air gap", "air gapped", "secure baseline",
-        "configuration management", "provisioning", "deprovisioning", "tpm", "trusted platform",
-        "hsm", "hardware security module", "secure enclave", "trusted execution environment",
-        "fde", "full disk encryption", "ephemeral", "ephemeral keys", "key rotation"
+        "md5", "sha", "sha-256", "rsa", "aes", "des", "3des", "tls", "ssl",
+        "diffie-hellman", "key exchange", "perfect forward secrecy", "ephemeral",
+        "cipher", "cipher suite", "elliptic curve", "blockchain", "quantum",
+        # Identity and access fundamentals
+        "multi-factor", "mfa", "2fa", "totp", "hotp", "single sign-on", "sso",
+        "saml", "oauth", "openid", "ldap", "kerberos", "rbac", "role-based",
+        "attribute-based", "abac", "least privilege", "need to know",
+        # Security control types
+        "preventive control", "detective control", "corrective control", "compensating control",
+        "technical control", "administrative control", "managerial control", "operational control",
+        "physical control",
+        # Secure protocols
+        "dnssec", "sftp", "ssh", "secure shell", "dkim", "spf", "dmarc", "s/mime",
+        "https", "tls", "imaps", "smtps",
+        # Hardware security
+        "tpm", "trusted platform", "hsm", "hardware security module", "secure enclave",
+        "fde", "full disk encryption", "secure baseline",
+        # Data concepts
+        "data classification", "data handling", "masking", "tokenization", "deidentification",
+        "data minimization", "data at rest", "data in transit", "data in use"
+        # Email security
+        "email security", "email", "smtp", "smtps", "pop3", "pop3s", "imap", "imaps", "phishing", "spoofing", 
+        "dkim", "spf", "dmarc", "s/mime", "email filtering", "email gateway", "secure email", "email encryption"
+        "email authentication", "email integrity", "email confidentiality"
     ],
-    "Implementation": [
-        # Access management and identity
-        "access management", "identity management", "account management", "password policy",
-        "password complexity", "password length", "password expiration", "account lockout",
-        "failed login attempts", "password history", "group policy", "gpo",
-        "centralized management", "decentralized management", "provisioning",
-        # Access controls
-        "least privilege", "privilege escalation", "principle of least privilege",
-        "permission", "rights", "access control", "allow list", "whitelist",
-        "deny list", "blocklist", "deny all default",
-        # Cryptographic implementation
-        "encryption", "cipher", "key management", "key rotation", "key escrow",
-        "key stretching", "pbkdf2", "bcrypt", "scrypt", "argon2",
-        "reversible encryption", "non-reversible", "hashing", "salt", "pepper",
-        "digital signature", "signature verification",
-        # Security software and tools
-        "antivirus", "anti-malware", "endpoint protection", "edr", "endpoint detection",
-        "host-based firewall", "hips", "host intrusion prevention",
-        "dlp", "data loss prevention", "removable media", "usb restrictions",
-        # Secure erase and data destruction
-        "secure erase", "secure delete", "data sanitization", "sanitize", "wiping",
-        "cryptographic erase", "formatting", "degaussing", "physical destruction",
-        "data retention", "shredding",
-        # Deployment and configuration
-        "deploy", "deployment", "configure", "configuration", "install", "installation",
-        "baseline", "hardening", "os hardening", "application hardening",
-        "disable unnecessary services", "service hardening",
-        # Patch management
-        "patch", "patch management", "update", "hotfix", "service pack", "security patch",
-        "patch tuesday", "emergency patch", "emergency update",
-        # Code security
-        "code review", "secure coding", "input validation", "input sanitization",
-        "output encoding", "parameterized query", "prepared statement",
-        "least privilege", "fail securely", "deny by default"
+    "Security Architecture": [
+	# Network architecture
+	"firewall", "next-generation firewall", "ngfw", "stateful firewall", "stateless",
+	"ids", "ips", "intrusion detection", "intrusion prevention", "nids", "hids",
+	"ids/ips", "waf", "web application firewall", "dlp", "data loss prevention",
+	"vpn", "virtual private network", "site-to-site", "remote access", "split tunnel",
+	"load balancer", "load balancing", "failover", "redundancy", "high availability",
+	"virtual ip", "vip", "nat", "network address translation", "proxy", "reverse proxy",
+	# Network segmentation
+	"dmz", "demilitarized zone", "air gap", "air gapped", "zero trust", "microsegmentation",
+	"vlan", "network segmentation", "screened subnet", "security zone",
+	# Cloud architecture
+	"cloud", "iaas", "paas", "saas", "faas", "hybrid cloud", "public cloud", "private cloud",
+	"shared responsibility", "cloud security", "security group", "resource policy",
+	"vm", "virtual machine", "hypervisor", "type 1", "type 2", "containerization",
+	"docker", "kubernetes", "serverless",
+	# Wireless
+	"wireless", "wpa", "wpa2", "wpa3", "wep", "wpa-enterprise", "wpa-personal",
+	"ieee 802.1x", "802.1x", "eap",
+	# Physical security
+	"physical security", "biometric", "fingerprint scan", "iris scan", "facial recognition",
+	"bollard", "mantrap", "badge reader", "keypad", "card reader", "cctv",
+	# Redundancy and recovery
+	"raid", "backup", "replication", "warm site", "hot site", "cold site",
+	"disaster recovery", "business continuity", "ups", "generator", "power"
+    # Ports and protocols
+    "ports", "port", "protocols", "tcp", "udp", "icmp", "http", "https", "ftp", "sftp",
+    "ssh", "telnet", "smtp", "smtps", "pop3", "pop3s", "imap", "imaps", "dns", "dhcp", "ldap", "kerberos", "rdp", "vnc"
     ],
-    "Operations and Incident Response": [
+    "Security Operations": [
         # Monitoring and logging
         "logging", "log", "audit log", "audit trail", "system log", "security log",
         "event log", "syslog", "centralized logging", "log aggregation", "siem",
@@ -280,7 +270,7 @@ DOMAIN_KEYWORDS = {
         "vulnerability", "vulnerability management", "vulnerability disclosure",
         "responsible disclosure", "zero-day", "patch management"
     ],
-    "Governance, Risk, and Compliance": [
+    "Security Program Management and Oversight": [
         # Regulations and compliance frameworks
         "compliance", "regulatory compliance", "regulation", "regulatory", "regulatory requirement",
         "hipaa", "hitech", "gdpr", "ccpa", "pci-dss", "pci dss", "sox", "sarbanes-oxley",
@@ -765,5 +755,20 @@ def delete_all_questions():
     c = conn.cursor()
     c.execute("DELETE FROM flashcards")
     c.execute("DELETE FROM questions")
+    conn.commit()
+    conn.close()
+
+def consolidate_domains():
+    """Consolidate similar domains into a single canonical domain."""
+    conn = get_conn()
+    c = conn.cursor()
+
+    for new_domain, keywords in DOMAIN_KEYWORDS.items():
+        for keyword in keywords:
+            c.execute(
+                "UPDATE questions SET domain=? WHERE LOWER(domain)=? OR LOWER(domain) LIKE ?",
+                (new_domain, keyword.lower(), f"%{keyword.lower()}%")
+            )
+
     conn.commit()
     conn.close()

@@ -19,8 +19,8 @@ from app_core import (
     get_conn, add_question, import_csv, import_json, convert_questions_to_import,
     list_domains, get_questions, record_attempt, stats_per_domain,
     schedule_update, due_flashcards, create_quiz, record_quiz_answer,
-    update_quiz_score, get_quiz_history, get_quiz_details, clear_quiz_history,
-    assign_missing_domains, resolve_asset_path, delete_all_questions
+    update_quiz_score, get_quiz_history, get_quiz_details, consolidate_domains, clear_quiz_history, 
+    consolidate_domains, assign_missing_domains, resolve_asset_path, delete_all_questions
 )
 
 # Optional: progress chart
@@ -151,7 +151,8 @@ class MainWindow(QMainWindow):
             domains.append(s['domain'])
             pct.append(s['pct'])
         self.progress_table.blockSignals(False)
-
+        self.progress_table.resizeColumnsToContents()
+        
         if MATPLOTLIB_AVAILABLE and domains:  # Added fallback check for empty data
             self.fig.clear()
         
@@ -162,12 +163,12 @@ class MainWindow(QMainWindow):
             ax = self.fig.add_subplot(111)
         
             # Create the bar chart
-            bars = ax.bar(domains, pct, color='#3498db', edgecolor='black') # Added clean styling
+            bars = ax.barh(domains, pct, color='#3498db', edgecolor='black') # Added clean styling
         
             # Configure axes
-            ax.set_ylabel("% Correct")
+            ax.set_xlabel("% Correct")
             ax.set_title("Accuracy by Domain", fontweight='bold', pad=15)
-            ax.set_ylim(0, 100)
+            ax.set_xlim(0, 100)
         
             # Crucial change: ha='right' aligns rotated text properly so it doesn't overlap lines
             ax.tick_params(axis='x', labelrotation=45)
@@ -184,7 +185,7 @@ class MainWindow(QMainWindow):
                         ha='center', va='bottom', fontsize=9)
 
             # Recalculate margins cleanly to ensure rotated text fits on the screen
-            self.fig.subplots_adjust(bottom=0.25) 
+            self.fig.subplots_adjust(left=0.25) 
             self.fig.tight_layout()
 
             # CRUCIAL: Force the canvas widget to physically resize to match the new fig inches
@@ -1099,6 +1100,7 @@ class MainWindow(QMainWindow):
         message = f"Imported {added} question{'s' if added != 1 else ''}"
         if duplicates > 0:
             message += f"\nSkipped {duplicates} duplicate{'s' if duplicates != 1 else ''}"
+        consolidate_domains()  # Optional: consolidate domains after import
         QMessageBox.information(self, "Imported", message)
         self.reload_domains()
         self.load_stats()
@@ -1141,6 +1143,10 @@ class MainWindow(QMainWindow):
 
         layout.addWidget(QLabel("<h2>Settings & Export</h2>"))
 
+        reassign_btn = QPushButton("Reassign Domains for All Questions")
+        reassign_btn.clicked.connect(self.on_reassign_domains)
+        layout.addWidget(reassign_btn)
+
         export_btn = QPushButton("Export Question Bank (JSON)")
         export_btn.clicked.connect(self.export_bank)
         layout.addWidget(export_btn)
@@ -1179,6 +1185,24 @@ class MainWindow(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to assign domains: {e}")
             print(f"Error assigning domains: {e}")
+
+    def on_reassign_domains(self):
+        reply = QMessageBox.question(
+            self,
+            "Reassign domains?",
+            "This will re-run domain classification on all questions, which may change existing domains. Continue?",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        if reply == QMessageBox.Yes:
+            try:
+                consolidate_domains()  # Optional: consolidate before reassigning
+                assign_missing_domains()  # Reuse function to reassign all
+                self.reload_domains()
+                self.load_stats()
+                QMessageBox.information(self, "Domains reassigned", "Domains have been reassigned for all questions.")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to reassign domains: {e}")
+                print(f"Error reassigning domains: {e}")
 
     # Export question bank to JSON
     def export_bank(self):
