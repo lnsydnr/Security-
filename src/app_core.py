@@ -233,7 +233,7 @@ DOMAIN_KEYWORDS = {
 	"raid", "backup", "replication", "warm site", "hot site", "cold site",
 	"disaster recovery", "business continuity", "ups", "generator", "power"
     # Ports and protocols
-    "ports", "port", "protocols", "tcp", "udp", "icmp", "http", "https", "ftp", "sftp",
+    "ports", "port", "protocols", "tcp", "TCP", "udp", "UDP", "icmp", "http", "https", "ftp", "sftp",
     "ssh", "telnet", "smtp", "smtps", "pop3", "pop3s", "imap", "imaps", "dns", "dhcp", "ldap", "kerberos", "rdp", "vnc"
     "service", "well-known port", "registered port", "dynamic port"
     ],
@@ -317,31 +317,13 @@ DOMAIN_KEYWORDS = {
     ]
 }
 
-
-def infer_question_domain(question, explanation=None, metadata=None):
+def infer_domain(question_text):
     """Infer a CompTIA Security+ objective domain from question content."""
-    text = " ".join(filter(None, [
-        question or "",
-        explanation or "",
-        metadata.get('explanation') if isinstance(metadata, dict) else ""
-    ])).lower()
-
-    best_domain = None
-    best_score = 0
+    text = question_text.lower()
     for domain, keywords in DOMAIN_KEYWORDS.items():
-        score = 0
-        for keyword in keywords:
-            if keyword in text:
-                score += 1
-        if score > best_score:
-            best_domain = domain
-            best_score = score
-
-    if best_domain and best_score > 0:
-        return best_domain
-
+        if any(kw.lower() in text for kw in keywords):
+            return domain
     return "General"
-
 
 def assign_missing_domains():
     """Infer domains for questions that are missing or still labeled as generic."""
@@ -355,7 +337,7 @@ def assign_missing_domains():
     for row in rows:
         metadata = json.loads(row['metadata']) if row['metadata'] else {}
         explanation = metadata.get('explanation')
-        inferred_domain = infer_question_domain(row['question'], explanation, metadata)
+        inferred_domain = infer_domain(row['question'], explanation, metadata)
         c.execute("UPDATE questions SET domain=? WHERE id=?", (inferred_domain, row['id']))
         updated += 1
     conn.commit()
@@ -505,7 +487,7 @@ def import_csv(path):
 
             domain = row.get('domain') or row.get('Domain')
             if not domain or str(domain).strip().lower() == 'general':
-                domain = infer_question_domain(q, explanation, metadata)
+                domain = infer_domain(q, explanation, metadata)
             
             if q:
                 # Check for duplicates
@@ -527,6 +509,7 @@ def import_json(path):
     with open(path, 'r', encoding='utf-8') as f:
         data = json.load(f)
         for item in data:
+            domain = item.get('domain') or infer_domain(item.get('question', ''))
             q = item.get('question')
             a = item.get('answer', '')
             t = item.get('type', 'free')
@@ -544,7 +527,7 @@ def import_json(path):
 
             domain = item.get('domain')
             if not domain or str(domain).strip().lower() == 'general':
-                domain = infer_question_domain(q, explanation, metadata)
+                domain = infer_domain(q, explanation, metadata)
 
             if q:
                 # Check for duplicates
@@ -772,3 +755,20 @@ def consolidate_domains():
 
     conn.commit()
     conn.close()
+
+def reassign_domains():
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("SELECT id, question, metadata FROM questions")
+    rows = c.fetchall()
+
+    updated = 0
+    for row in rows:
+        new_domain = infer_domain(row['question'])
+        if new_domain != 'General':
+            c.execute("UPDATE questions SET domain=? WHERE id=?", (new_domain, row['id']))
+            updated += 1
+    
+    conn.commit()
+    conn.close()
+    return updated
