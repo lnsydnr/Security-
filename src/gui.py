@@ -1263,6 +1263,13 @@ class MainWindow(QMainWindow):
             except Exception:
                 pass
 
+    def on_reassign_domains(self):
+        from app_core import reassign_domains
+        updated = reassign_domains()
+        QMessageBox.information(self, "Domains reassigned", f"Reassigned domains for {updated} questions.")
+        self.reload_domains()
+        self.load_stats()
+
     def delete_all_questions(self):
         reply = QMessageBox.question(
             self,

@@ -45,6 +45,8 @@ The app stores data locally in your home directory at `~/.security_plus_study_ap
   python -m pip install -r requirements.txt
   ```
 
+Refer to the [Bundling the app](docs/Bundling_the_app.md) guide to create a standalone executable for easier distribution.
+
 ## Running the App
 
 From the repository root, launch the app from the `src` directory:
